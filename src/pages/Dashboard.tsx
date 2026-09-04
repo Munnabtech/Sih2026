@@ -187,7 +187,7 @@ export default function Dashboard() {
               onReport={reportAt}
             />
           )}
-          {view === "map" && <MapView />}
+          {view === "map" && <MapView onSelect={openZone} />}
           {view === "report" && (
             <Report initialLocation={reportLocation} />
           )}

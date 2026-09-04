@@ -47,10 +47,13 @@ const schema = defineSchema(
     zones: defineTable({
       code: v.string(), // e.g. "4A-11"
       name: v.string(),
+      state: v.optional(v.string()), // NER state, e.g. "Assam"
       district: v.string(),
       type: v.string(), // e.g. "Road slope", "Residential hillside", "Riverbank"
       risk: v.number(), // 0-100
       status: v.union(v.literal("monitored"), v.literal("standby")),
+      latitude: v.optional(v.number()),
+      longitude: v.optional(v.number()),
       lastUpdated: v.number(),
     }).index("by_code", ["code"]),
   },

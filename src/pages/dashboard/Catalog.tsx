@@ -15,9 +15,19 @@ export function Catalog({ onSelect }: CatalogProps) {
   const ensureDefaultZones = useMutation(api.zones.ensureDefaultZones);
   const [query, setQuery] = useState("");
 
-  // Seed the catalog once so a fresh deployment starts populated.
+  // Seed the catalog once so a fresh deployment starts populated, and
+  // backfill geo fields on zones created before coordinates existed.
   useEffect(() => {
-    if (zones !== undefined && zones.length === 0) {
+    if (
+      zones !== undefined &&
+      (zones.length === 0 ||
+        zones.some(
+          (z) =>
+            z.latitude === undefined ||
+            z.longitude === undefined ||
+            z.state === undefined,
+        ))
+    ) {
       void ensureDefaultZones();
     }
   }, [zones, ensureDefaultZones]);
