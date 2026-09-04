@@ -130,9 +130,10 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                       onClick={() => navigate("/")}
                     />
                   </div>
-                <CardTitle className="text-xl">Get Started</CardTitle>
+                <CardTitle className="text-xl">Get started</CardTitle>
                 <CardDescription>
-                  Enter your email to log in or sign up
+                  Create an account or sign in — we&apos;ll email you a one-time
+                  code.
                 </CardDescription>
               </CardHeader>
               <form onSubmit={handleEmailSubmit}>
@@ -187,8 +188,12 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                       disabled={isLoading}
                     >
                       <UserX className="mr-2 h-4 w-4" />
-                      Continue as Guest
+                      Continue as guest
                     </Button>
+                    <p className="mt-3 text-center text-xs text-muted-foreground">
+                      Guests get the full dashboard without an account — sign
+                      in later to keep your session secure.
+                    </p>
                   </div>
                 </CardContent>
               </form>

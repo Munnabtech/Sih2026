@@ -15,6 +15,9 @@ export type ViewId =
   | "weather"
   | "map"
   | "report"
+  | "catalog"
+  | "zone"
+  | "admin"
   | "settings";
 
 export const DISTRICT = "Kamrup District, Assam";
@@ -77,6 +80,7 @@ export interface AlertItem {
   body: string;
   time: string;
   source: "Model" | "Community";
+  verified?: boolean;
 }
 
 export const demoAlerts: AlertItem[] = [
@@ -147,3 +151,19 @@ export const incidentTypes = [
   "Structural damage",
   "Other",
 ];
+
+/* ---------------------------------------------------------------- */
+/* Risk levels                                                       */
+/* ---------------------------------------------------------------- */
+export interface RiskLevel {
+  level: "Low" | "Moderate" | "High" | "Critical";
+  dot: string; // tailwind bg class for the level dot
+  text: string; // tailwind text class
+}
+
+export function riskLevel(score: number): RiskLevel {
+  if (score >= 81) return { level: "Critical", dot: "bg-red-600", text: "text-red-600" };
+  if (score >= 61) return { level: "High", dot: "bg-orange-500", text: "text-orange-600" };
+  if (score >= 41) return { level: "Moderate", dot: "bg-amber-500", text: "text-amber-600" };
+  return { level: "Low", dot: "bg-emerald-600", text: "text-emerald-700" };
+}

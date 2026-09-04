@@ -39,7 +39,20 @@ const schema = defineSchema(
       description: v.string(),
       location: v.string(),
       createdAt: v.number(),
+      verified: v.optional(v.boolean()), // confirmed by the monitoring desk
+      verifiedAt: v.optional(v.number()),
     }).index("by_createdAt", ["createdAt"]),
+
+    // monitored risk zones — the catalog of what Dharanetra watches
+    zones: defineTable({
+      code: v.string(), // e.g. "4A-11"
+      name: v.string(),
+      district: v.string(),
+      type: v.string(), // e.g. "Road slope", "Residential hillside", "Riverbank"
+      risk: v.number(), // 0-100
+      status: v.union(v.literal("monitored"), v.literal("standby")),
+      lastUpdated: v.number(),
+    }).index("by_code", ["code"]),
   },
   {
     schemaValidation: false,

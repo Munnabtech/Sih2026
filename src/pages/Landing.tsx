@@ -136,7 +136,8 @@ export default function Landing() {
           >
             Dharanetra fuses satellite terrain analysis, live rainfall
             telemetry, and community field reports into one clear risk signal
-            for Assam&apos;s hill districts.
+            — built for the people of Assam and the wider North East Region,
+            where the ground moves and networks don&apos;t always reach.
           </motion.p>
 
           <motion.div
@@ -364,8 +365,9 @@ export default function Landing() {
                 Be the first line of defense.
               </h2>
               <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-background/60 sm:text-base">
-                Predict • Alert • Respond • Protect. Open the command center and
-                see your district&apos;s risk in real time.
+                Predict • Alert • Respond • Protect. Sign in once and your
+                session stays secure — the app always opens straight back to
+                your district&apos;s risk, no matter what happened last time.
               </p>
               <Link
                 to="/dashboard"

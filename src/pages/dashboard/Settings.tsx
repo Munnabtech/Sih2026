@@ -1,15 +1,24 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Bell, ChevronRight, LogOut, Volume2, WifiOff } from "lucide-react";
+import {
+  Bell,
+  ChevronRight,
+  LogOut,
+  ShieldCheck,
+  Volume2,
+  WifiOff,
+} from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "@/hooks/use-auth";
+import type { ViewId } from "./data";
 
 interface SettingsProps {
   userName?: string | null;
   userEmail?: string | null;
   userImage?: string | null;
+  onNavigate: (view: ViewId) => void;
 }
 
 function initialsOf(name?: string | null, email?: string | null) {
@@ -20,7 +29,7 @@ function initialsOf(name?: string | null, email?: string | null) {
   return (email?.[0] ?? "R").toUpperCase();
 }
 
-export function Settings({ userName, userEmail, userImage }: SettingsProps) {
+export function Settings({ userName, userEmail, userImage, onNavigate }: SettingsProps) {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [prefs, setPrefs] = useState({
@@ -108,6 +117,29 @@ export function Settings({ userName, userEmail, userImage }: SettingsProps) {
               />
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Workspace */}
+      <section>
+        <p className="eyebrow mb-3">Workspace</p>
+        <div className="flex flex-col divide-y divide-border border border-border">
+          <button
+            type="button"
+            onClick={() => onNavigate("admin")}
+            className="flex items-center gap-4 bg-background px-5 py-4 text-left transition-colors hover:bg-accent"
+          >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground">
+              <ShieldCheck className="size-4" strokeWidth={1.75} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">Monitoring desk</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Manage zones and verify field reports
+              </p>
+            </div>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </button>
         </div>
       </section>
 

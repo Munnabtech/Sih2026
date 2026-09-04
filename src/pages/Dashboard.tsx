@@ -1,41 +1,50 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DharanetraMark } from "@/components/DharanetraMark";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import {
   Bell,
+  BookOpen,
   Camera,
   CloudRain,
   Home,
   LogOut,
   Map,
   Settings as SettingsIcon,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { Admin } from "./dashboard/Admin";
 import { Alerts } from "./dashboard/Alerts";
-import type { ViewId } from "./dashboard/data";
+import { Catalog } from "./dashboard/Catalog";
+import { DISTRICT, type ViewId } from "./dashboard/data";
 import { MapView } from "./dashboard/MapView";
 import { Overview } from "./dashboard/Overview";
 import { Report } from "./dashboard/Report";
 import { Settings } from "./dashboard/Settings";
 import { Weather } from "./dashboard/Weather";
+import { ZoneDetail } from "./dashboard/ZoneDetail";
 
 const NAV_ITEMS: { id: ViewId; label: string; icon: LucideIcon }[] = [
   { id: "overview", label: "Overview", icon: Home },
   { id: "alerts", label: "Alerts", icon: Bell },
   { id: "weather", label: "Weather", icon: CloudRain },
+  { id: "catalog", label: "Risk catalog", icon: BookOpen },
   { id: "map", label: "Risk map", icon: Map },
   { id: "report", label: "Report", icon: Camera },
+  { id: "admin", label: "Admin", icon: ShieldCheck },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
-/* Mobile bottom bar — Weather stays reachable via the Overview view */
+/* Mobile bottom bar — Map, Weather, and Admin stay reachable via the
+   Overview quick actions, the Weather details link, and Settings. */
 const MOBILE_NAV: { id: ViewId; label: string; icon: LucideIcon }[] = [
   { id: "overview", label: "Home", icon: Home },
+  { id: "catalog", label: "Catalog", icon: BookOpen },
   { id: "alerts", label: "Alerts", icon: Bell },
-  { id: "map", label: "Map", icon: Map },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -51,6 +60,8 @@ export default function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [view, setView] = useState<ViewId>("overview");
+  const [selectedZone, setSelectedZone] = useState<Doc<"zones"> | null>(null);
+  const [reportLocation, setReportLocation] = useState(DISTRICT);
 
   const handleSignOut = async () => {
     try {
@@ -65,6 +76,21 @@ export default function Dashboard() {
   const email = user?.email ?? null;
   const image = user?.image ?? null;
 
+  const goTo = (next: ViewId) => {
+    if (next === "zone" && !selectedZone) return;
+    setView(next);
+  };
+
+  const openZone = (zone: Doc<"zones">) => {
+    setSelectedZone(zone);
+    setView("zone");
+  };
+
+  const reportAt = (location: string) => {
+    setReportLocation(location);
+    setView("report");
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* ------------------------------------------------ Desktop sidebar */}
@@ -76,12 +102,12 @@ export default function Dashboard() {
           </span>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 px-3 py-6">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
               type="button"
-              onClick={() => setView(item.id)}
+              onClick={() => goTo(item.id)}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
                 view === item.id
@@ -153,10 +179,26 @@ export default function Dashboard() {
           )}
           {view === "alerts" && <Alerts />}
           {view === "weather" && <Weather />}
+          {view === "catalog" && <Catalog onSelect={openZone} />}
+          {view === "zone" && (
+            <ZoneDetail
+              zone={selectedZone ?? undefined}
+              onBack={() => setView("catalog")}
+              onReport={reportAt}
+            />
+          )}
           {view === "map" && <MapView />}
-          {view === "report" && <Report />}
+          {view === "report" && (
+            <Report initialLocation={reportLocation} />
+          )}
+          {view === "admin" && <Admin />}
           {view === "settings" && (
-            <Settings userName={name} userEmail={email} userImage={image} />
+            <Settings
+              userName={name}
+              userEmail={email}
+              userImage={image}
+              onNavigate={setView}
+            />
           )}
         </div>
       </main>
@@ -167,7 +209,7 @@ export default function Dashboard() {
           <button
             key={item.id}
             type="button"
-            onClick={() => setView(item.id)}
+            onClick={() => goTo(item.id)}
             className={cn(
               "flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors",
               view === item.id

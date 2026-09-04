@@ -43,9 +43,29 @@ export const listIncidents = query({
           description: incident.description,
           location: incident.location,
           createdAt: incident.createdAt,
+          verified: incident.verified ?? false,
           reporterName: reporter?.name ?? "Field reporter",
         };
       }),
     );
+  },
+});
+
+/** Mark a field report as confirmed by the monitoring desk. */
+export const verifyIncident = mutation({
+  args: { id: v.id("incidents") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      verified: true,
+      verifiedAt: Date.now(),
+    });
+  },
+});
+
+/** Remove a field report from the district feed. */
+export const deleteIncident = mutation({
+  args: { id: v.id("incidents") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
   },
 });

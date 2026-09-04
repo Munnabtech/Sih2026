@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
 import {
   AlertTriangle,
+  Check,
   Info,
   MapPin,
   ShieldCheck,
@@ -67,6 +68,7 @@ export function Alerts() {
         addSuffix: true,
       }),
       source: "Community",
+      verified: incident.verified,
     }));
     return [...fromReports, ...demoAlerts];
   }, [incidents]);
@@ -126,6 +128,12 @@ export function Alerts() {
                   {item.source === "Community" && (
                     <Badge variant="outline" className="rounded-sm px-1.5 py-0 text-[10px] font-medium">
                       Field report
+                    </Badge>
+                  )}
+                  {item.verified && (
+                    <Badge className="gap-1 rounded-sm bg-emerald-600 px-1.5 py-0 text-[10px] font-medium text-white">
+                      <Check className="size-3" />
+                      Verified
                     </Badge>
                   )}
                 </div>

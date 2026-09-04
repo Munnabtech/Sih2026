@@ -16,11 +16,15 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { DISTRICT, incidentTypes } from "./data";
 
-export function Report() {
+interface ReportProps {
+  initialLocation?: string;
+}
+
+export function Report({ initialLocation }: ReportProps) {
   const reportIncident = useMutation(api.incidents.reportIncident);
   const incidents = useQuery(api.incidents.listIncidents);
 
-  const [location, setLocation] = useState(DISTRICT);
+  const [location, setLocation] = useState(initialLocation ?? DISTRICT);
   const [type, setType] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
