@@ -39,6 +39,30 @@ const schema = defineSchema(
       description: v.string(),
       location: v.string(),
       createdAt: v.number(),
+      // lifecycle: reported -> under_verification -> verified ->
+      // response_in_progress -> resolved  (or false_duplicate)
+      status: v.optional(
+        v.union(
+          v.literal("reported"),
+          v.literal("under_verification"),
+          v.literal("verified"),
+          v.literal("response_in_progress"),
+          v.literal("resolved"),
+          v.literal("false_duplicate"),
+        ),
+      ),
+      severity: v.optional(
+        v.union(
+          v.literal("low"),
+          v.literal("moderate"),
+          v.literal("high"),
+          v.literal("critical"),
+        ),
+      ),
+      state: v.optional(v.string()),
+      district: v.optional(v.string()),
+      latitude: v.optional(v.number()),
+      longitude: v.optional(v.number()),
       verified: v.optional(v.boolean()), // confirmed by the monitoring desk
       verifiedAt: v.optional(v.number()),
     }).index("by_createdAt", ["createdAt"]),

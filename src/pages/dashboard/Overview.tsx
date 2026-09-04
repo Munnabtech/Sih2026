@@ -6,6 +6,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { api } from "@/convex/_generated/api";
+import { useQuery } from "convex/react";
 import {
   Bell,
   Camera,
@@ -20,12 +22,14 @@ import {
   Wind,
   type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   DISTRICT,
+  NER_STATES,
   liveWeather,
   risk,
   riskFactors,
+  riskLevel,
   safetyTips,
   type ViewId,
 } from "./data";
@@ -34,6 +38,7 @@ import { RiskGauge } from "./RiskGauge";
 interface OverviewProps {
   userName?: string | null;
   onNavigate: (view: ViewId) => void;
+  onOpenCatalog: (state?: string) => void;
 }
 
 function greeting() {
@@ -43,9 +48,25 @@ function greeting() {
   return "Good evening";
 }
 
-export function Overview({ userName, onNavigate }: OverviewProps) {
+export function Overview({ userName, onNavigate, onOpenCatalog }: OverviewProps) {
   const [safetyOpen, setSafetyOpen] = useState(false);
+  const zones = useQuery(api.zones.listZones);
   const name = userName || "Resident";
+
+  const stateSummary = useMemo(() => {
+    if (!zones) return undefined;
+    return NER_STATES.map((state) => {
+      const rows = zones.filter((z) => z.state === state);
+      const risks = rows.map((z) => z.risk);
+      return {
+        state,
+        count: rows.length,
+        max: risks.length ? Math.max(...risks) : null,
+        critical: risks.filter((r) => r >= 81).length,
+        high: risks.filter((r) => r >= 61 && r < 81).length,
+      };
+    }).filter((row) => row.count > 0);
+  }, [zones]);
 
   const weatherStats = [
     { icon: CloudRain, label: "Rainfall", value: liveWeather.rainfall },
@@ -101,13 +122,16 @@ export function Overview({ userName, onNavigate }: OverviewProps) {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <p className="eyebrow">Live weather</p>
-          <button
-            type="button"
-            onClick={() => onNavigate("weather")}
-            className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Details →
-          </button>
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] text-muted-foreground">Demo</span>
+            <button
+              type="button"
+              onClick={() => onNavigate("weather")}
+              className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Details →
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-2 divide-x divide-border border border-border sm:grid-cols-4">
           {weatherStats.map((s) => (
@@ -161,6 +185,81 @@ export function Overview({ userName, onNavigate }: OverviewProps) {
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      {/* NER risk overview */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="eyebrow">NER risk overview</p>
+          <button
+            type="button"
+            onClick={() => onOpenCatalog()}
+            className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            All zones →
+          </button>
+        </div>
+        <div className="overflow-hidden rounded-lg border border-border bg-background">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-border text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                <th className="px-5 py-3 font-medium">State</th>
+                <th className="px-5 py-3 text-right font-medium">Zones</th>
+                <th className="px-5 py-3 text-right font-medium">Peak risk</th>
+                <th className="px-5 py-3 text-right font-medium">High</th>
+                <th className="px-5 py-3 text-right font-medium">Critical</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {stateSummary === undefined && (
+                <tr>
+                  <td colSpan={5} className="px-5 py-6 text-center text-xs text-muted-foreground">
+                    Loading zone registry…
+                  </td>
+                </tr>
+              )}
+              {stateSummary?.map((row) => {
+                const level = row.max !== null ? riskLevel(row.max) : null;
+                return (
+                  <tr
+                    key={row.state}
+                    className="cursor-pointer transition-colors hover:bg-accent"
+                    onClick={() => onOpenCatalog(row.state)}
+                  >
+                    <td className="px-5 py-3 font-medium">{row.state}</td>
+                    <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">
+                      {row.count}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      {row.max !== null ? (
+                        <span className="inline-flex items-center gap-2 font-semibold tabular-nums">
+                          <span
+                            className={`size-2 rounded-full ${level?.dot ?? "bg-muted"}`}
+                          />
+                          {row.max}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">
+                      {row.high}
+                    </td>
+                    <td className="px-5 py-3 text-right tabular-nums text-red-600">
+                      {row.critical}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="border-t border-border px-5 py-3">
+            <p className="text-xs text-muted-foreground">
+              Live aggregates from the monitored-zone registry. Select a state
+              to open its zones in the risk catalog.
+            </p>
+          </div>
         </div>
       </section>
 

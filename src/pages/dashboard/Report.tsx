@@ -14,7 +14,13 @@ import { formatDistanceToNow } from "date-fns";
 import { Loader2, MapPin, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { DISTRICT, incidentTypes } from "./data";
+import {
+  DISTRICT,
+  NER_STATES,
+  SEVERITIES,
+  STATE_DISTRICTS,
+  incidentTypes,
+} from "./data";
 
 interface ReportProps {
   initialLocation?: string;
@@ -27,7 +33,16 @@ export function Report({ initialLocation }: ReportProps) {
   const [location, setLocation] = useState(initialLocation ?? DISTRICT);
   const [type, setType] = useState("");
   const [description, setDescription] = useState("");
+  const [state, setState] = useState("");
+  const [district, setDistrict] = useState("");
+  const [severity, setSeverity] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const knownDistricts = state ? (STATE_DISTRICTS[state] ?? []) : [];
+  const lat = latitude.trim() === "" ? undefined : Number(latitude);
+  const lng = longitude.trim() === "" ? undefined : Number(longitude);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -38,9 +53,22 @@ export function Report({ initialLocation }: ReportProps) {
         type: type.trim(),
         description: description.trim(),
         location: location.trim() || DISTRICT,
+        state: state || undefined,
+        district: district.trim() || undefined,
+        severity: (severity || undefined) as
+          | "low"
+          | "moderate"
+          | "high"
+          | "critical"
+          | undefined,
+        latitude:
+          lat !== undefined && Number.isFinite(lat) ? lat : undefined,
+        longitude:
+          lng !== undefined && Number.isFinite(lng) ? lng : undefined,
       });
       toast.success("Report submitted", {
-        description: "Field teams have been notified. Thank you.",
+        description:
+          "Filed as a citizen report under review by the monitoring desk.",
       });
       setType("");
       setDescription("");
@@ -107,6 +135,107 @@ export function Report({ initialLocation }: ReportProps) {
           </div>
         </div>
 
+        <div className="grid gap-5 sm:grid-cols-3">
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="report-state"
+              className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground"
+            >
+              State
+            </label>
+            <Select value={state} onValueChange={setState}>
+              <SelectTrigger id="report-state" className="w-full">
+                <SelectValue placeholder="Select state" />
+              </SelectTrigger>
+              <SelectContent>
+                {NER_STATES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="report-district"
+              className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground"
+            >
+              District
+            </label>
+            <Input
+              id="report-district"
+              list="report-districts"
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+              placeholder={state ? "e.g. Kamrup" : "Select state first"}
+              disabled={!state}
+            />
+            <datalist id="report-districts">
+              {knownDistricts.map((d) => (
+                <option key={d} value={d} />
+              ))}
+            </datalist>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="report-severity"
+              className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground"
+            >
+              Estimated severity
+            </label>
+            <Select value={severity} onValueChange={setSeverity}>
+              <SelectTrigger id="report-severity" className="w-full">
+                <SelectValue placeholder="Optional" />
+              </SelectTrigger>
+              <SelectContent>
+                {SEVERITIES.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="report-lat"
+              className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground"
+            >
+              Latitude (optional)
+            </label>
+            <Input
+              id="report-lat"
+              type="number"
+              step="any"
+              value={latitude}
+              onChange={(e) => setLatitude(e.target.value)}
+              placeholder="e.g. 26.1445"
+              className="font-mono"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="report-lng"
+              className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground"
+            >
+              Longitude (optional)
+            </label>
+            <Input
+              id="report-lng"
+              type="number"
+              step="any"
+              value={longitude}
+              onChange={(e) => setLongitude(e.target.value)}
+              placeholder="e.g. 91.7362"
+              className="font-mono"
+            />
+          </div>
+        </div>
+
         <div className="flex flex-col gap-2">
           <label
             htmlFor="report-description"
@@ -125,9 +254,10 @@ export function Report({ initialLocation }: ReportProps) {
         </div>
 
         <div className="flex items-center justify-between gap-4 border-t border-border pt-5">
-          <p className="text-xs text-muted-foreground">
-            Reports are shared with the district monitoring desk and visible in
-            the alerts feed.
+          <p className="text-xs leading-5 text-muted-foreground">
+            Reports are filed as citizen reports under review. They are shared
+            with the monitoring desk and visible in the alerts and incident
+            feeds.
           </p>
           <Button
             type="submit"

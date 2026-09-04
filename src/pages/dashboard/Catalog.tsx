@@ -1,16 +1,29 @@
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMutation, useQuery } from "convex/react";
 import { ChevronRight, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { riskLevel } from "./data";
+import { NER_STATES, riskLevel } from "./data";
 
 interface CatalogProps {
   onSelect: (zone: Doc<"zones">) => void;
+  stateFilter?: string;
+  onStateFilterChange?: (state: string) => void;
 }
 
-export function Catalog({ onSelect }: CatalogProps) {
+export function Catalog({
+  onSelect,
+  stateFilter = "all",
+  onStateFilterChange,
+}: CatalogProps) {
   const zones = useQuery(api.zones.listZones);
   const ensureDefaultZones = useMutation(api.zones.ensureDefaultZones);
   const [query, setQuery] = useState("");
@@ -35,14 +48,15 @@ export function Catalog({ onSelect }: CatalogProps) {
   const visible = useMemo(() => {
     if (!zones) return undefined;
     const q = query.trim().toLowerCase();
-    if (!q) return zones;
-    return zones.filter((zone) =>
-      [zone.name, zone.code, zone.district, zone.type]
+    return zones.filter((zone) => {
+      if (stateFilter !== "all" && zone.state !== stateFilter) return false;
+      if (!q) return true;
+      return [zone.name, zone.code, zone.district, zone.type, zone.state ?? ""]
         .join(" ")
         .toLowerCase()
-        .includes(q),
-    );
-  }, [zones, query]);
+        .includes(q);
+    });
+  }, [zones, query, stateFilter]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,16 +74,36 @@ export function Catalog({ onSelect }: CatalogProps) {
         )}
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name, code, district, or type"
-          className="h-11 w-full rounded-md border border-border bg-background pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring"
-        />
+      {/* Search + state filter */}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, code, district, state, or type"
+            className="h-11 w-full rounded-md border border-border bg-background pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring"
+          />
+        </div>
+        <Select
+          value={stateFilter}
+          onValueChange={(v) => onStateFilterChange?.(v)}
+        >
+          <SelectTrigger className="h-11 w-full sm:w-56 text-xs">
+            <SelectValue placeholder="All states" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="text-xs">
+              All states (NER)
+            </SelectItem>
+            {NER_STATES.map((s) => (
+              <SelectItem key={s} value={s} className="text-xs">
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Zone list */}
@@ -81,7 +115,8 @@ export function Catalog({ onSelect }: CatalogProps) {
         )}
         {visible !== undefined && visible.length === 0 && (
           <div className="px-6 py-14 text-center text-sm text-muted-foreground">
-            No zones match “{query}”.
+            No zones match the current search{query ? ` for “${query}”` : ""}
+            {stateFilter !== "all" ? ` in ${stateFilter}` : ""}.
           </div>
         )}
         {visible?.map((zone) => {

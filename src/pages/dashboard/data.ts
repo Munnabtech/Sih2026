@@ -17,10 +17,111 @@ export type ViewId =
   | "report"
   | "catalog"
   | "zone"
+  | "incidents"
+  | "incident"
   | "admin"
   | "settings";
 
 export const DISTRICT = "Kamrup District, Assam";
+
+/* ---------------------------------------------------------------- */
+/* North East Region geography                                       */
+/* ---------------------------------------------------------------- */
+export const NER_STATES = [
+  "Arunachal Pradesh",
+  "Assam",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Sikkim",
+  "Tripura",
+] as const;
+
+/**
+ * Real districts referenced by the monitored-zone seed. Districts are kept
+ * in the zones table (backend of record); this map only powers form
+ * suggestions and filters. Authoritative district data can be connected
+ * later via GeoJSON or government administrative datasets.
+ */
+export const STATE_DISTRICTS: Record<string, string[]> = {
+  Assam: ["Kamrup"],
+  Sikkim: ["Gangtok"],
+  "Arunachal Pradesh": ["Tawang", "Papum Pare"],
+  Meghalaya: ["East Khasi Hills"],
+  Manipur: ["Imphal West"],
+  Mizoram: ["Aizawl"],
+  Nagaland: ["Kohima", "Dimapur"],
+  Tripura: ["West Tripura"],
+};
+
+export function haversineKm(
+  aLat: number,
+  aLng: number,
+  bLat: number,
+  bLng: number,
+): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+/* ---------------------------------------------------------------- */
+/* Incident lifecycle                                                */
+/* ---------------------------------------------------------------- */
+export const INCIDENT_STATUSES = [
+  { value: "reported", label: "Reported" },
+  { value: "under_verification", label: "Under verification" },
+  { value: "verified", label: "Verified" },
+  { value: "response_in_progress", label: "Response in progress" },
+  { value: "resolved", label: "Resolved" },
+  { value: "false_duplicate", label: "False / duplicate" },
+] as const;
+
+export type IncidentStatusValue = (typeof INCIDENT_STATUSES)[number]["value"];
+
+export function incidentStatusLabel(status?: string): string {
+  return (
+    INCIDENT_STATUSES.find((s) => s.value === status)?.label ??
+    status ??
+    "Reported"
+  );
+}
+
+export const SEVERITIES = [
+  { value: "low", label: "Low" },
+  { value: "moderate", label: "Moderate" },
+  { value: "high", label: "High" },
+  { value: "critical", label: "Critical" },
+] as const;
+
+export type SeverityValue = (typeof SEVERITIES)[number]["value"];
+
+export function severityLabel(severity?: string): string {
+  return SEVERITIES.find((s) => s.value === severity)?.label ?? "Not stated";
+}
+
+/** Shape returned by api.incidents.listIncidents. */
+export interface IncidentItem {
+  id: string;
+  type: string;
+  description: string;
+  location: string;
+  state?: string;
+  district?: string;
+  severity?: string;
+  status?: string;
+  latitude?: number;
+  longitude?: number;
+  createdAt: number;
+  verified: boolean;
+  reporterName: string;
+}
 
 /* ---------------------------------------------------------------- */
 /* Live telemetry (demo data — wire to a weather API for live data)  */
@@ -81,6 +182,7 @@ export interface AlertItem {
   time: string;
   source: "Model" | "Community";
   verified?: boolean;
+  status?: string;
 }
 
 export const demoAlerts: AlertItem[] = [
@@ -155,6 +257,15 @@ export const incidentTypes = [
 /* ---------------------------------------------------------------- */
 /* Risk levels                                                       */
 /* ---------------------------------------------------------------- */
+/*
+ * Display mapping for a 0-100 risk score.
+ *
+ * The authoritative risk classification for model output (probability ->
+ * LOW/MODERATE/HIGH/CRITICAL) lives in ONE place on the backend:
+ * backend/ml_fastapi/config.py (RISK_THRESHOLDS). The frontend receives
+ * the final risk level from the ML API and uses the mapping below only for
+ * the zones table's stored 0-100 score.
+ */
 export interface RiskLevel {
   level: "Low" | "Moderate" | "High" | "Critical";
   dot: string; // tailwind bg class for the level dot

@@ -11,6 +11,7 @@ import {
   Wind,
 } from "lucide-react";
 import { liveWeather, riskLevel } from "./data";
+import { ModelAssessmentForm } from "./MlStatusCard";
 import { RiskGauge } from "./RiskGauge";
 
 interface ZoneDetailProps {
@@ -114,11 +115,8 @@ export function ZoneDetail({ zone, onBack, onReport }: ZoneDetailProps) {
         <div className="flex flex-col rounded-lg border border-border bg-background">
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <p className="eyebrow">Live telemetry</p>
-            <span className="text-xs tabular-nums text-muted-foreground">
-              Updated {new Date(zone.lastUpdated).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+            <span className="text-[11px] text-muted-foreground">
+              Demo values · no weather API connected
             </span>
           </div>
           <div className="grid grid-cols-2 divide-x divide-border border-b border-border">
@@ -146,6 +144,9 @@ export function ZoneDetail({ zone, onBack, onReport }: ZoneDetailProps) {
           </ul>
         </div>
       </section>
+
+      {/* Model risk assessment — real inference when the ML service is up */}
+      <ModelAssessmentForm />
     </div>
   );
 }

@@ -12,7 +12,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { demoAlerts, type AlertItem, type AlertSeverity } from "./data";
+import {
+  demoAlerts,
+  incidentStatusLabel,
+  type AlertItem,
+  type AlertSeverity,
+  type ViewId,
+} from "./data";
 
 const SEVERITY_STYLE: Record<
   AlertSeverity,
@@ -54,7 +60,11 @@ function matchesFilter(item: AlertItem, filter: Filter) {
   return item.severity === "advisory" || item.severity === "info";
 }
 
-export function Alerts() {
+interface AlertsProps {
+  onNavigate: (view: ViewId) => void;
+}
+
+export function Alerts({ onNavigate }: AlertsProps) {
   const [filter, setFilter] = useState<Filter>("all");
   const incidents = useQuery(api.incidents.listIncidents);
 
@@ -69,6 +79,7 @@ export function Alerts() {
       }),
       source: "Community",
       verified: incident.verified,
+      status: incident.status,
     }));
     return [...fromReports, ...demoAlerts];
   }, [incidents]);
@@ -136,12 +147,49 @@ export function Alerts() {
                       Verified
                     </Badge>
                   )}
+                  {item.source === "Community" && item.status && (
+                    <Badge className="rounded-sm bg-foreground px-1.5 py-0 text-[10px] font-medium text-background">
+                      {incidentStatusLabel(item.status)}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </article>
           );
         })}
       </div>
+
+      {/* Incident feed link */}
+      <button
+        type="button"
+        onClick={() => onNavigate("incidents")}
+        className="flex items-center justify-between rounded-lg border border-border bg-background px-5 py-4 text-left transition-colors hover:bg-accent"
+      >
+        <div>
+          <p className="text-sm font-semibold">Incident feed</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Full list and map of reported incidents with lifecycle status
+          </p>
+        </div>
+        <span className="text-xs font-medium text-muted-foreground">→</span>
+      </button>
+
+      {/* Emergency guidance */}
+      <section className="rounded-lg border border-border bg-foreground px-5 py-5 text-background">
+        <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-background/50">
+          Emergency information
+        </p>
+        <p className="mt-2 text-sm leading-6">
+          If there is immediate danger, contact your local emergency
+          authorities without delay. Do not wait for an alert or a report
+          update.
+        </p>
+        <p className="mt-2 text-xs leading-5 text-background/50">
+          Official emergency numbers and district control-room contacts will
+          appear here once verified from authoritative sources. Dharanetra
+          never displays unverified emergency contact numbers.
+        </p>
+      </section>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
   Bell,
   BookOpen,
   Camera,
+  ClipboardList,
   CloudRain,
   Home,
   LogOut,
@@ -20,7 +21,9 @@ import { useNavigate } from "react-router";
 import { Admin } from "./dashboard/Admin";
 import { Alerts } from "./dashboard/Alerts";
 import { Catalog } from "./dashboard/Catalog";
-import { DISTRICT, type ViewId } from "./dashboard/data";
+import { DISTRICT, type IncidentItem, type ViewId } from "./dashboard/data";
+import { IncidentIntel } from "./dashboard/IncidentIntel";
+import { Incidents } from "./dashboard/Incidents";
 import { MapView } from "./dashboard/MapView";
 import { Overview } from "./dashboard/Overview";
 import { Report } from "./dashboard/Report";
@@ -31,6 +34,7 @@ import { ZoneDetail } from "./dashboard/ZoneDetail";
 const NAV_ITEMS: { id: ViewId; label: string; icon: LucideIcon }[] = [
   { id: "overview", label: "Overview", icon: Home },
   { id: "alerts", label: "Alerts", icon: Bell },
+  { id: "incidents", label: "Incidents", icon: ClipboardList },
   { id: "weather", label: "Weather", icon: CloudRain },
   { id: "catalog", label: "Risk catalog", icon: BookOpen },
   { id: "map", label: "Risk map", icon: Map },
@@ -61,6 +65,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [view, setView] = useState<ViewId>("overview");
   const [selectedZone, setSelectedZone] = useState<Doc<"zones"> | null>(null);
+  const [selectedIncident, setSelectedIncident] =
+    useState<IncidentItem | null>(null);
+  const [catalogState, setCatalogState] = useState("all");
   const [reportLocation, setReportLocation] = useState(DISTRICT);
 
   const handleSignOut = async () => {
@@ -84,6 +91,16 @@ export default function Dashboard() {
   const openZone = (zone: Doc<"zones">) => {
     setSelectedZone(zone);
     setView("zone");
+  };
+
+  const openIncident = (incident: IncidentItem) => {
+    setSelectedIncident(incident);
+    setView("incident");
+  };
+
+  const openCatalog = (state?: string) => {
+    if (state) setCatalogState(state);
+    setView("catalog");
   };
 
   const reportAt = (location: string) => {
@@ -175,11 +192,28 @@ export default function Dashboard() {
       <main className="px-4 pb-24 pt-8 sm:px-6 lg:pb-12 lg:pl-[264px] lg:pt-12">
         <div className="mx-auto w-full max-w-5xl">
           {view === "overview" && (
-            <Overview userName={name} onNavigate={setView} />
+            <Overview
+              userName={name}
+              onNavigate={setView}
+              onOpenCatalog={openCatalog}
+            />
           )}
-          {view === "alerts" && <Alerts />}
+          {view === "alerts" && <Alerts onNavigate={setView} />}
+          {view === "incidents" && <Incidents onOpen={openIncident} />}
+          {view === "incident" && (
+            <IncidentIntel
+              incident={selectedIncident}
+              onBack={() => setView("incidents")}
+            />
+          )}
           {view === "weather" && <Weather />}
-          {view === "catalog" && <Catalog onSelect={openZone} />}
+          {view === "catalog" && (
+            <Catalog
+              onSelect={openZone}
+              stateFilter={catalogState}
+              onStateFilterChange={setCatalogState}
+            />
+          )}
           {view === "zone" && (
             <ZoneDetail
               zone={selectedZone ?? undefined}
