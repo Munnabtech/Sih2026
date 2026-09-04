@@ -4,7 +4,6 @@ import { DharanetraMark } from "@/components/DharanetraMark";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { Coverage } from "./dashboard/Coverage";
 import { useQuery } from "convex/react";
 import {
   Bell,
@@ -26,6 +25,7 @@ import { useNavigate } from "react-router";
 import { Admin } from "./dashboard/Admin";
 import { Alerts } from "./dashboard/Alerts";
 import { Catalog } from "./dashboard/Catalog";
+import { Coverage } from "./dashboard/Coverage";
 import { DISTRICT, type IncidentItem, type ViewId } from "./dashboard/data";
 import { IncidentIntel } from "./dashboard/IncidentIntel";
 import { Incidents } from "./dashboard/Incidents";
@@ -54,12 +54,7 @@ const SECONDARY_NAV: NavItem[] = [
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
-/* Mobile tabs: Home / Map / Report (raised) / Alerts / More */
-const MOBILE_NAV: NavItem[] = [
-  { id: "overview", label: "Home", icon: Home },
-  { id: "map", label: "Map", icon: Map },
-];
-
+/* Mobile "More" sheet contents — everything beyond Home/Map/Report/Alerts */
 const MOBILE_MORE: ViewId[] = [
   "catalog",
   "incidents",
@@ -103,9 +98,8 @@ export default function Dashboard() {
 
   const incidents = useQuery(api.incidents.listIncidents);
   const pendingCount =
-    incidents?.filter(
-      (i) => (i.status ?? "reported") === "reported",
-    ).length ?? 0;
+    incidents?.filter((i) => (i.status ?? "reported") === "reported").length ??
+    0;
 
   const handleSignOut = async () => {
     try {
@@ -122,6 +116,7 @@ export default function Dashboard() {
 
   const goTo = (next: ViewId) => {
     if (next === "zone" && !selectedZone) return;
+    if (next === "incident" && !selectedIncident) return;
     setView(next);
     setMoreOpen(false);
   };
@@ -318,9 +313,7 @@ export default function Dashboard() {
               onOpenIncident={openIncident}
             />
           )}
-          {view === "report" && (
-            <Report initialLocation={reportLocation} />
-          )}
+          {view === "report" && <Report initialLocation={reportLocation} />}
           {view === "coverage" && <Coverage />}
           {view === "admin" && <Admin />}
           {view === "settings" && (
@@ -394,7 +387,7 @@ export default function Dashboard() {
           aria-expanded={moreOpen}
           className={cn(
             "flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium",
-            MOBILE_MORE.includes(view) || view === "settings"
+            MOBILE_MORE.includes(view) || view === "zone" || view === "incident"
               ? "text-primary"
               : "text-muted-foreground",
           )}
@@ -433,7 +426,10 @@ export default function Dashboard() {
                     onClick={() => goTo(item.id)}
                     className="flex items-center gap-2.5 rounded-md border border-border px-3 py-3 text-left text-xs font-medium transition-colors hover:bg-accent"
                   >
-                    <item.icon className="size-4 text-muted-foreground" strokeWidth={1.75} />
+                    <item.icon
+                      className="size-4 text-muted-foreground"
+                      strokeWidth={1.75}
+                    />
                     {item.label}
                   </button>
                 ))}
