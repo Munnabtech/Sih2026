@@ -1,4 +1,5 @@
 import { api } from "@/convex/_generated/api";
+import { AssetImage } from "@/components/AssetImage";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "convex/react";
 import { Check, Loader2, Minus, Satellite } from "lucide-react";
@@ -160,8 +161,13 @@ export function Coverage() {
       {/* Expansion */}
       <section>
         <p className="eyebrow mb-3">Planned geographic expansion</p>
-        <div className="rounded-md border border-border bg-card px-4 py-4">
-          <div className="flex items-start gap-3">
+        <div className="overflow-hidden rounded-md border border-border bg-card">
+          <AssetImage
+            id="data.landscape"
+            className="h-40 border-b border-border sm:h-48"
+            fallbackLabel="NER landscape imagery — add NER_LANDSCAPE_IMAGE_URL in src/config/assets.ts"
+          />
+          <div className="flex items-start gap-3 px-4 py-4">
             <Satellite className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium">North Eastern Region of India</p>
@@ -229,7 +235,7 @@ export function Coverage() {
                 name: "Historical landslide inventory",
                 status: "Planned",
                 detail:
-                  "Structure is in place; an authoritative dataset is not yet loaded.",
+                  "Structure is in place; an authoritative dataset is not yet loaded. Archive imagery can be added via HISTORICAL_LANDSLIDE_IMAGE_URL.",
                 tone: "muted" as const,
               },
               {

@@ -1,4 +1,5 @@
 import { api } from "@/convex/_generated/api";
+import { AssetImage } from "@/components/AssetImage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -149,6 +150,13 @@ export function Report({ initialLocation }: ReportProps) {
             File another report
           </Button>
         </div>
+
+        {/* Educational awareness imagery on the confirmation screen */}
+        <AssetImage
+          id="backgrounds.awareness"
+          className="h-36 rounded-md border border-border"
+          fallbackLabel="Landslide awareness imagery"
+        />
       </div>
     );
   }

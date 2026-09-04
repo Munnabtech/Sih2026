@@ -24,6 +24,7 @@ import {
   severityLabel,
 } from "./data";
 import { MlStatusCard } from "./MlStatusCard";
+import { AssetImage } from "@/components/AssetImage";
 
 /* ---------------------------------------------------------------- */
 /* Zone row                                                          */
@@ -304,6 +305,13 @@ export function Admin() {
           not operated by or officially affiliated with any government body.
         </p>
       </div>
+
+      {/* About image — DHARANETRA_ABOUT_IMAGE_URL in src/config/assets.ts */}
+      <AssetImage
+        id="backgrounds.about"
+        className="h-44 rounded-md border border-border sm:h-52"
+        fallbackLabel="Platform monitoring imagery — add DHARANETRA_ABOUT_IMAGE_URL in src/config/assets.ts"
+      />
 
       <Alert className="border-border bg-card py-3">
         <Info className="size-4 text-muted-foreground" />

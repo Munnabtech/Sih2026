@@ -6,6 +6,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AssetImage } from "@/components/AssetImage";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
@@ -389,6 +390,11 @@ export function Overview({ userName, onNavigate, onOpenCatalog }: OverviewProps)
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Safety guide</AlertDialogTitle>
+            <AssetImage
+              id="backgrounds.awareness"
+              className="mt-2 h-32 rounded-sm border border-border"
+              fallbackLabel="Landslide awareness imagery"
+            />
             <AlertDialogDescription className="space-y-3 pt-2">
               {[
                 "If you see cracks, bulging ground, or leaning trees on a slope, move away immediately and report it.",

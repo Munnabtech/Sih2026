@@ -1,4 +1,5 @@
 import { DharanetraMark } from "@/components/DharanetraMark";
+import { AssetImage } from "@/components/AssetImage";
 import { Link } from "react-router";
 import {
   AlertTriangle,
@@ -147,6 +148,14 @@ export default function Landing() {
             </p>
           </div>
 
+          {/* Hero image — configure via LANDSLIDE_HERO_IMAGE_URL in
+              src/config/assets.ts; shows a clean fallback until set. */}
+          <AssetImage
+            id="backgrounds.hero"
+            className="hidden min-h-64 rounded-md border border-border lg:block"
+            fallbackLabel="Landslide monitoring imagery — add LANDSLIDE_HERO_IMAGE_URL in src/config/assets.ts"
+          />
+
           {/* Coverage transparency panel */}
           <div className="rounded-md border border-border bg-card">
             <div className="border-b border-border px-5 py-3.5">
@@ -263,13 +272,19 @@ export default function Landing() {
       {/* Reporting section */}
       <section id="reporting" className="border-b border-border">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 lg:grid-cols-2 lg:px-6 lg:py-16">
-          <div className="rounded-md border border-border bg-card p-6 lg:p-8">
-            <span className="flex size-9 items-center justify-center rounded-sm border border-border text-muted-foreground">
-              <AlertTriangle className="size-4" strokeWidth={1.75} />
-            </span>
-            <h2 className="mt-4 text-lg font-semibold tracking-tight">
-              See something on a slope? Report it.
-            </h2>
+          <div className="flex flex-col gap-4">
+            <AssetImage
+              id="backgrounds.awareness"
+              className="h-48 rounded-md border border-border"
+              fallbackLabel="Landslide awareness imagery — add LANDSLIDE_AWARENESS_IMAGE_URL in src/config/assets.ts"
+            />
+            <div className="rounded-md border border-border bg-card p-6 lg:p-8">
+              <span className="flex size-9 items-center justify-center rounded-sm border border-border text-muted-foreground">
+                <AlertTriangle className="size-4" strokeWidth={1.75} />
+              </span>
+              <h2 className="mt-4 text-lg font-semibold tracking-tight">
+                See something on a slope? Report it.
+              </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               Cracks, bulging ground, leaning trees, sudden seepage — a
               five-minute report helps the monitoring desk verify and respond.
@@ -282,6 +297,7 @@ export default function Landing() {
               Report an incident
               <ArrowRight className="size-4" />
             </Link>
+            </div>
           </div>
           <div className="rounded-md border border-border bg-card p-6 lg:p-8">
             <span className="flex size-9 items-center justify-center rounded-sm border border-border text-muted-foreground">
