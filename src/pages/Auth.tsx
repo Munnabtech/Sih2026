@@ -111,8 +111,12 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Institutional top bar */}
+      <div className="topbar px-4 py-1.5 text-center text-[11px] tracking-wide">
+        Decision Support Platform for Landslide Risk Monitoring — North
+        Eastern Region of India
+      </div>
 
-      
       {/* Auth Content */}
       <div className="flex-1 flex items-center justify-center">
         <div className="flex items-center justify-center h-full flex-col">

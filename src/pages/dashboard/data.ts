@@ -19,6 +19,7 @@ export type ViewId =
   | "zone"
   | "incidents"
   | "incident"
+  | "coverage"
   | "admin"
   | "settings";
 
@@ -185,11 +186,13 @@ export interface AlertItem {
   status?: string;
 }
 
+/** Illustrative advisories — clearly labelled "Demonstration" in the UI.
+    Never presented as live model or government output. */
 export const demoAlerts: AlertItem[] = [
   {
     id: "a1",
     severity: "high",
-    title: "High risk — Sonapur slope",
+    title: "High risk — Sonapur slope (demo)",
     body: "Heavy rainfall intensification on slope 4A-11. Monitoring frequency increased.",
     time: "16 minutes ago",
     source: "Model",
@@ -197,7 +200,7 @@ export const demoAlerts: AlertItem[] = [
   {
     id: "a2",
     severity: "critical",
-    title: "Critical — historical landslide point",
+    title: "Critical — historical landslide point (demo)",
     body: "Rainfall above 20 mm/hr sustained for 3 hours near recorded slide points.",
     time: "29 minutes ago",
     source: "Model",
@@ -213,7 +216,7 @@ export const demoAlerts: AlertItem[] = [
   {
     id: "a4",
     severity: "high",
-    title: "Soil saturation alert — Rangia",
+    title: "Soil saturation alert — Rangia (demo)",
     body: "Saturation at 91% on slopes 2B-03 and 2B-04. Pre-emptive advisory issued.",
     time: "1 hour ago",
     source: "Model",
@@ -221,7 +224,7 @@ export const demoAlerts: AlertItem[] = [
   {
     id: "a5",
     severity: "advisory",
-    title: "Flash flood watch — Kulsi river basin",
+    title: "Flash flood watch — Kulsi river basin (demo)",
     body: "River stage rising 4 cm/hr. Avoid low-lying crossings overnight.",
     time: "2 hours ago",
     source: "Model",

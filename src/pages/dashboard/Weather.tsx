@@ -146,8 +146,8 @@ export function Weather() {
     <div className="flex flex-col gap-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="eyebrow">Telemetry</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Weather</h1>
+          <p className="eyebrow">Environmental telemetry</p>
+          <h1 className="mt-1 text-xl font-semibold tracking-tight">Weather</h1>
         </div>
         <span className="rounded-md border border-border px-2.5 py-1 text-[11px] text-muted-foreground">
           Demo data — no weather API connected

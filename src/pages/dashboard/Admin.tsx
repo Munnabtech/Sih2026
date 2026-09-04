@@ -291,17 +291,27 @@ export function Admin() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <p className="eyebrow">Monitoring desk</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Admin</h1>
+        <p className="eyebrow">About the platform</p>
+        <h1 className="mt-1 text-xl font-semibold tracking-tight">
+          About &amp; administration
+        </h1>
+        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
+          Dharanetra is a decision-support platform for landslide risk
+          monitoring in the North Eastern Region of India. It combines a
+          monitoring-zone registry, citizen and field incident reporting with
+          a verification workflow, and a trained landslide prediction model
+          served over a FastAPI backend. It is an independent platform and is
+          not operated by or officially affiliated with any government body.
+        </p>
       </div>
 
-      <Alert className="border-border bg-background py-3">
+      <Alert className="border-border bg-card py-3">
         <Info className="size-4 text-muted-foreground" />
-        <AlertTitle className="text-sm font-medium">Demo build</AlertTitle>
+        <AlertTitle className="text-sm font-medium">Demonstration access</AlertTitle>
         <AlertDescription className="text-sm text-muted-foreground">
-          This desk is shown to every signed-in user for now. In production it
-          is restricted to district administrators, and incident status changes
-          are logged per operator.
+          This administration desk is open to every signed-in user in this
+          build. In production it is restricted to district administrators,
+          and incident status changes are logged per operator.
         </AlertDescription>
       </Alert>
 
@@ -320,6 +330,7 @@ export function Admin() {
             Data sources
           </TabsTrigger>
         </TabsList>
+        {/* About / platform overview content for the primary nav entry */}
 
         <TabsContent value="zones" className="mt-4">
           <div className="flex flex-col divide-y divide-border border border-border">

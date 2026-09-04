@@ -43,39 +43,42 @@
 }
 
 /* CHANGE VALUES FOR THEME */
+/* Institutional navy + cool neutral gray system. Risk colours are reserved
+   for operational meaning (CRITICAL/HIGH/MODERATE/LOW) and are applied via
+   utility classes in components, never baked into these tokens. */
 :root {
-  --radius: 0.375rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --radius: 0.25rem;
+  --background: oklch(0.975 0.003 240);
+  --foreground: oklch(0.21 0.035 260);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.21 0.035 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.972 0 0);
-  --muted-foreground: oklch(0.52 0 0);
-  --accent: oklch(0.958 0 0);
-  --accent-foreground: oklch(0.145 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.898 0 0);
-  --input: oklch(0.898 0 0);
-  --ring: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.21 0.035 260);
+  --primary: oklch(0.26 0.055 264);
+  --primary-foreground: oklch(0.985 0.002 240);
+  --secondary: oklch(0.955 0.005 240);
+  --secondary-foreground: oklch(0.26 0.055 264);
+  --muted: oklch(0.955 0.005 240);
+  --muted-foreground: oklch(0.5 0.02 255);
+  --accent: oklch(0.945 0.008 240);
+  --accent-foreground: oklch(0.26 0.055 264);
+  --destructive: oklch(0.5 0.19 27);
+  --border: oklch(0.9 0.008 245);
+  --input: oklch(0.88 0.01 245);
+  --ring: oklch(0.45 0.07 258);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.235 0.05 262);
+  --sidebar-foreground: oklch(0.93 0.008 245);
+  --sidebar-primary: oklch(0.985 0.002 240);
+  --sidebar-primary-foreground: oklch(0.235 0.05 262);
+  --sidebar-accent: oklch(0.3 0.06 262);
+  --sidebar-accent-foreground: oklch(0.985 0.002 240);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.6 0.08 258);
 }
 
 .dark {
@@ -120,19 +123,35 @@
     @apply bg-background text-foreground antialiased;
   }
   ::selection {
-    background: oklch(0.145 0 0);
-    color: oklch(0.985 0 0);
+    background: oklch(0.26 0.055 264);
+    color: oklch(0.985 0.002 240);
   }
   button:not([disabled]),
   [role="button"]:not([disabled]) {
     cursor: pointer;
   }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }
 
 @layer utilities {
-  /* Minimalist section eyebrow label */
+  /* Institutional section label */
   .eyebrow {
-    @apply text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground;
+    @apply text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground;
+  }
+  /* Thin institutional top information bar */
+  .topbar {
+    @apply bg-[oklch(0.19_0.045_262)] text-[oklch(0.87_0.015_250)];
+  }
+  /* Skeleton shimmer for loading states */
+  .skeleton {
+    @apply animate-pulse rounded-sm bg-muted;
+  }
+  /* GIS-style floating map control */
+  .map-panel {
+    @apply rounded-md border border-border bg-card shadow-[0_1px_4px_rgb(15_23_42/0.12)];
   }
 }
 
@@ -177,7 +196,8 @@
   padding: 6px 8px;
 }
 
-/* Risk marker pin (divIcon) */
+/* Risk marker pin (divIcon) — filled = prediction available, hollow =
+   monitoring-only (no model coverage) */
 .dnt-marker {
   position: relative;
   width: 26px;
@@ -194,6 +214,15 @@
   box-shadow: 0 2px 5px rgb(0 0 0 / 0.3);
 }
 
+.dnt-marker--hollow .dnt-marker__pin {
+  background: #ffffff;
+  border-color: var(--dnt-marker-color, #8a8f98);
+}
+
+.dnt-marker--hollow .dnt-marker__dot {
+  background: var(--dnt-marker-color, #8a8f98);
+}
+
 .dnt-marker__dot {
   position: absolute;
   top: 50%;
@@ -203,6 +232,32 @@
   margin: -3px 0 0 -3px;
   border-radius: 9999px;
   background: #ffffff;
+}
+
+/* Dark tile backdrop for satellite mode chrome */
+.leaflet-container.dnt-satellite {
+  background: #0b1220;
+}
+
+/* Legend swatch — inline, non-interactive copy of the marker pin */
+.dnt-marker--legend {
+  position: relative;
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.dnt-marker--legend .dnt-marker__pin {
+  border-width: 1.5px;
+  box-shadow: none;
+}
+
+.dnt-marker--legend .dnt-marker__dot {
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border: none;
 }
 
 /* Marker popup panel */

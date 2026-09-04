@@ -1,14 +1,19 @@
+import { api } from "@/convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DharanetraMark } from "@/components/DharanetraMark";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { Coverage } from "./dashboard/Coverage";
+import { useQuery } from "convex/react";
 import {
   Bell,
   BookOpen,
   Camera,
   ClipboardList,
   CloudRain,
+  Database,
+  Ellipsis,
   Home,
   LogOut,
   Map,
@@ -16,7 +21,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Admin } from "./dashboard/Admin";
 import { Alerts } from "./dashboard/Alerts";
@@ -31,25 +36,37 @@ import { Settings } from "./dashboard/Settings";
 import { Weather } from "./dashboard/Weather";
 import { ZoneDetail } from "./dashboard/ZoneDetail";
 
-const NAV_ITEMS: { id: ViewId; label: string; icon: LucideIcon }[] = [
-  { id: "overview", label: "Overview", icon: Home },
-  { id: "alerts", label: "Alerts", icon: Bell },
+type NavItem = { id: ViewId; label: string; icon: LucideIcon };
+
+const PRIMARY_NAV: NavItem[] = [
+  { id: "overview", label: "Dashboard", icon: Home },
+  { id: "map", label: "Risk Map", icon: Map },
+  { id: "catalog", label: "Predictions", icon: BookOpen },
   { id: "incidents", label: "Incidents", icon: ClipboardList },
+  { id: "alerts", label: "Alerts", icon: Bell },
+  { id: "coverage", label: "Data & Coverage", icon: Database },
+  { id: "admin", label: "About", icon: ShieldCheck },
+];
+
+const SECONDARY_NAV: NavItem[] = [
   { id: "weather", label: "Weather", icon: CloudRain },
-  { id: "catalog", label: "Risk catalog", icon: BookOpen },
-  { id: "map", label: "Risk map", icon: Map },
-  { id: "report", label: "Report", icon: Camera },
-  { id: "admin", label: "Admin", icon: ShieldCheck },
+  { id: "report", label: "Report Incident", icon: Camera },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
-/* Mobile bottom bar — Map, Weather, and Admin stay reachable via the
-   Overview quick actions, the Weather details link, and Settings. */
-const MOBILE_NAV: { id: ViewId; label: string; icon: LucideIcon }[] = [
+/* Mobile tabs: Home / Map / Report (raised) / Alerts / More */
+const MOBILE_NAV: NavItem[] = [
   { id: "overview", label: "Home", icon: Home },
-  { id: "catalog", label: "Catalog", icon: BookOpen },
-  { id: "alerts", label: "Alerts", icon: Bell },
-  { id: "settings", label: "Settings", icon: SettingsIcon },
+  { id: "map", label: "Map", icon: Map },
+];
+
+const MOBILE_MORE: ViewId[] = [
+  "catalog",
+  "incidents",
+  "weather",
+  "coverage",
+  "admin",
+  "settings",
 ];
 
 function initialsOf(name?: string | null, email?: string | null) {
@@ -58,6 +75,19 @@ function initialsOf(name?: string | null, email?: string | null) {
     return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
   }
   return (email?.[0] ?? "R").toUpperCase();
+}
+
+function Clock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <span className="tabular-nums">
+      {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+    </span>
+  );
 }
 
 export default function Dashboard() {
@@ -69,6 +99,13 @@ export default function Dashboard() {
     useState<IncidentItem | null>(null);
   const [catalogState, setCatalogState] = useState("all");
   const [reportLocation, setReportLocation] = useState(DISTRICT);
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const incidents = useQuery(api.incidents.listIncidents);
+  const pendingCount =
+    incidents?.filter(
+      (i) => (i.status ?? "reported") === "reported",
+    ).length ?? 0;
 
   const handleSignOut = async () => {
     try {
@@ -86,6 +123,7 @@ export default function Dashboard() {
   const goTo = (next: ViewId) => {
     if (next === "zone" && !selectedZone) return;
     setView(next);
+    setMoreOpen(false);
   };
 
   const openZone = (zone: Doc<"zones">) => {
@@ -108,49 +146,90 @@ export default function Dashboard() {
     setView("report");
   };
 
+  const navButton = (item: NavItem) => {
+    const active =
+      view === item.id ||
+      (item.id === "incidents" && view === "incident") ||
+      (item.id === "catalog" && view === "zone");
+    return (
+      <button
+        key={item.id}
+        type="button"
+        onClick={() => goTo(item.id)}
+        className={cn(
+          "flex items-center gap-2.5 rounded-sm px-3 py-2 text-[13px] font-medium transition-colors",
+          active
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+        )}
+      >
+        <item.icon className="size-4 shrink-0" strokeWidth={1.75} />
+        {item.label}
+      </button>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* ------------------------------------------------ Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border bg-background lg:flex">
-        <div className="flex h-16 items-center gap-2.5 border-b border-border px-6">
-          <DharanetraMark className="size-7" />
-          <span className="text-xs font-semibold tracking-[0.28em]">
-            DHARANETRA
+      {/* ------------------------------------------------ Institutional top bar */}
+      <div className="topbar sticky top-0 z-50 hidden h-8 items-center justify-between px-6 text-[11px] tracking-wide lg:flex">
+        <span>
+          Decision Support Platform for Landslide Risk Monitoring — North
+          Eastern Region of India
+        </span>
+        <span className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full bg-emerald-400" />
+            System Online
           </span>
+          <Clock />
+        </span>
+      </div>
+
+      {/* ------------------------------------------------ Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-sidebar lg:top-8 lg:flex">
+        <div className="flex items-center gap-2.5 border-b border-sidebar-border px-5 py-4">
+          <span className="flex size-9 items-center justify-center rounded-sm bg-sidebar-primary">
+            <DharanetraMark className="size-6 text-sidebar-primary-foreground" />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold tracking-[0.2em] text-sidebar-foreground">
+              DHARANETRA
+            </p>
+            <p className="truncate text-[10px] text-sidebar-foreground/50">
+              AI-Powered Landslide Risk Monitoring
+            </p>
+          </div>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => goTo(item.id)}
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                view === item.id
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-            >
-              <item.icon className="size-4.5" strokeWidth={1.75} />
-              {item.label}
-            </button>
-          ))}
+        <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-5">
+          <div className="flex flex-col gap-0.5">
+            <p className="eyebrow mb-1.5 px-3 text-sidebar-foreground/40">
+              Monitoring
+            </p>
+            {PRIMARY_NAV.map(navButton)}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <p className="eyebrow mb-1.5 px-3 text-sidebar-foreground/40">
+              Operations
+            </p>
+            {SECONDARY_NAV.map(navButton)}
+          </div>
         </nav>
 
-        <div className="border-t border-border p-3">
-          <div className="flex items-center gap-3 rounded-md px-2 py-2">
-            <Avatar className="size-9">
+        <div className="border-t border-sidebar-border p-3">
+          <div className="flex items-center gap-3 rounded-sm px-2 py-2">
+            <Avatar className="size-8">
               {image && <AvatarImage src={image} alt={name ?? ""} />}
-              <AvatarFallback className="rounded-full bg-muted text-xs font-semibold">
+              <AvatarFallback className="rounded-full bg-sidebar-accent text-[11px] font-semibold text-sidebar-accent-foreground">
                 {initialsOf(name, email)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">
+              <p className="truncate text-[13px] font-medium text-sidebar-foreground">
                 {name || "Resident"}
               </p>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="truncate text-[11px] text-sidebar-foreground/50">
                 {email || "Guest account"}
               </p>
             </div>
@@ -158,7 +237,7 @@ export default function Dashboard() {
               type="button"
               onClick={handleSignOut}
               aria-label="Sign out"
-              className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="flex size-8 shrink-0 items-center justify-center rounded-sm text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
             >
               <LogOut className="size-4" strokeWidth={1.75} />
             </button>
@@ -167,30 +246,41 @@ export default function Dashboard() {
       </aside>
 
       {/* ------------------------------------------------ Mobile header */}
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur-sm lg:hidden">
-        <button
-          type="button"
-          onClick={() => setView("overview")}
-          className="flex items-center gap-2.5"
-        >
-          <DharanetraMark className="size-6" />
-          <span className="text-[11px] font-semibold tracking-[0.28em]">
-            DHARANETRA
+      <header className="sticky top-0 z-40 border-b border-sidebar-border bg-sidebar lg:hidden">
+        <div className="topbar flex h-7 items-center justify-between px-4 text-[10px]">
+          <span>Decision Support Platform — NER of India</span>
+          <span className="flex items-center gap-1.5">
+            <span className="size-1 rounded-full bg-emerald-400" />
+            Online
           </span>
-        </button>
-        <button type="button" onClick={() => setView("settings")}>
-          <Avatar className="size-8">
-            {image && <AvatarImage src={image} alt={name ?? ""} />}
-            <AvatarFallback className="rounded-full bg-muted text-[11px] font-semibold">
-              {initialsOf(name, email)}
-            </AvatarFallback>
-          </Avatar>
-        </button>
+        </div>
+        <div className="flex h-12 items-center justify-between px-4">
+          <button
+            type="button"
+            onClick={() => setView("overview")}
+            className="flex items-center gap-2"
+          >
+            <span className="flex size-7 items-center justify-center rounded-sm bg-sidebar-primary">
+              <DharanetraMark className="size-5 text-sidebar-primary-foreground" />
+            </span>
+            <span className="text-xs font-semibold tracking-[0.2em] text-sidebar-foreground">
+              DHARANETRA
+            </span>
+          </button>
+          <button type="button" onClick={() => setView("settings")}>
+            <Avatar className="size-7">
+              {image && <AvatarImage src={image} alt={name ?? ""} />}
+              <AvatarFallback className="rounded-full bg-sidebar-accent text-[10px] font-semibold text-sidebar-accent-foreground">
+                {initialsOf(name, email)}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+        </div>
       </header>
 
       {/* ------------------------------------------------ Content */}
-      <main className="px-4 pb-24 pt-8 sm:px-6 lg:pb-12 lg:pl-[264px] lg:pt-12">
-        <div className="mx-auto w-full max-w-5xl">
+      <main className="px-4 pb-24 pt-5 sm:px-6 lg:pb-10 lg:pl-[264px] lg:pt-6">
+        <div className="mx-auto w-full max-w-6xl">
           {view === "overview" && (
             <Overview
               userName={name}
@@ -221,10 +311,17 @@ export default function Dashboard() {
               onReport={reportAt}
             />
           )}
-          {view === "map" && <MapView onSelect={openZone} />}
+          {view === "map" && (
+            <MapView
+              onSelect={openZone}
+              onReport={reportAt}
+              onOpenIncident={openIncident}
+            />
+          )}
           {view === "report" && (
             <Report initialLocation={reportLocation} />
           )}
+          {view === "coverage" && <Coverage />}
           {view === "admin" && <Admin />}
           {view === "settings" && (
             <Settings
@@ -238,23 +335,29 @@ export default function Dashboard() {
       </main>
 
       {/* ------------------------------------------------ Mobile bottom bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur-sm lg:hidden">
-        {MOBILE_NAV.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => goTo(item.id)}
-            className={cn(
-              "flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors",
-              view === item.id
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <item.icon className="size-5" strokeWidth={1.75} />
-            {item.label}
-          </button>
-        ))}
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-card/95 backdrop-blur-sm lg:hidden">
+        <button
+          type="button"
+          onClick={() => goTo("overview")}
+          className={cn(
+            "flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium",
+            view === "overview" ? "text-primary" : "text-muted-foreground",
+          )}
+        >
+          <Home className="size-5" strokeWidth={1.75} />
+          Home
+        </button>
+        <button
+          type="button"
+          onClick={() => goTo("map")}
+          className={cn(
+            "flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium",
+            view === "map" ? "text-primary" : "text-muted-foreground",
+          )}
+        >
+          <Map className="size-5" strokeWidth={1.75} />
+          Map
+        </button>
         <button
           type="button"
           onClick={() => setView("report")}
@@ -263,15 +366,81 @@ export default function Dashboard() {
         >
           <span
             className={cn(
-              "-mt-6 flex size-11 items-center justify-center rounded-full bg-foreground text-background shadow-md transition-transform",
+              "-mt-6 flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform",
               view === "report" && "scale-105",
             )}
           >
             <Camera className="size-5" strokeWidth={1.75} />
           </span>
-          <span className="text-[10px] font-medium text-foreground">Report</span>
+          <span className="text-[10px] font-medium text-primary">Report</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => goTo("alerts")}
+          className={cn(
+            "relative flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium",
+            view === "alerts" ? "text-primary" : "text-muted-foreground",
+          )}
+        >
+          <Bell className="size-5" strokeWidth={1.75} />
+          Alerts
+          {pendingCount > 0 && (
+            <span className="absolute right-4 top-1.5 size-1.5 rounded-full bg-destructive" />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMoreOpen((o) => !o)}
+          aria-expanded={moreOpen}
+          className={cn(
+            "flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium",
+            MOBILE_MORE.includes(view) || view === "settings"
+              ? "text-primary"
+              : "text-muted-foreground",
+          )}
+        >
+          <Ellipsis className="size-5" strokeWidth={1.75} />
+          More
         </button>
       </nav>
+
+      {/* Mobile "More" sheet */}
+      {moreOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setMoreOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="absolute inset-x-0 bottom-0 rounded-t-lg border-t border-border bg-card p-4 pb-8">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-semibold">More</p>
+              <button
+                type="button"
+                onClick={() => setMoreOpen(false)}
+                className="text-xs text-muted-foreground"
+              >
+                Close
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[...PRIMARY_NAV, ...SECONDARY_NAV]
+                .filter((item) => MOBILE_MORE.includes(item.id))
+                .map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => goTo(item.id)}
+                    className="flex items-center gap-2.5 rounded-md border border-border px-3 py-3 text-left text-xs font-medium transition-colors hover:bg-accent"
+                  >
+                    <item.icon className="size-4 text-muted-foreground" strokeWidth={1.75} />
+                    {item.label}
+                  </button>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,7 +12,7 @@ import { useQuery } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { ChevronRight, MapPin } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import {
@@ -22,28 +22,9 @@ import {
   incidentStatusLabel,
   severityLabel,
 } from "./data";
-
-const NER_BOUNDS: [[number, number], [number, number]] = [
-  [21.6, 87.9],
-  [29.6, 98.3],
-];
-
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: "#c94f42",
-  high: "#d97a3c",
-  moderate: "#d9b53c",
-  low: "#7e9c7e",
-};
-
-function makeIcon(color: string) {
-  return L.divIcon({
-    className: "",
-    html: `<div class="dnt-marker" style="--dnt-marker-color: ${color}"><span class="dnt-marker__pin"></span><span class="dnt-marker__dot"></span></div>`,
-    iconSize: [26, 36],
-    iconAnchor: [13, 34],
-    popupAnchor: [0, -36],
-  });
-}
+import { BasemapSwitcher } from "./MapControls";
+import { MapChrome } from "./MapShared";
+import { NER_BOUNDS, type BasemapId, incidentIcon } from "./map";
 
 interface IncidentsProps {
   onOpen: (incident: IncidentItem) => void;
@@ -52,6 +33,7 @@ interface IncidentsProps {
 export function Incidents({ onOpen }: IncidentsProps) {
   const incidents = useQuery(api.incidents.listIncidents);
   const [view, setView] = useState<"list" | "map">("list");
+  const [basemap, setBasemap] = useState<BasemapId>("standard");
   const [state, setState] = useState("all");
   const [district, setDistrict] = useState("all");
   const [status, setStatus] = useState("all");
@@ -70,43 +52,40 @@ export function Incidents({ onOpen }: IncidentsProps) {
     return incidents.filter((incident) => {
       if (state !== "all" && incident.state !== state) return false;
       if (district !== "all" && incident.district !== district) return false;
-      if (status !== "all" && (incident.status ?? "reported") !== status)
-        return false;
+      if (status !== "all" && (incident.status ?? "reported") !== status) return false;
       if (severity !== "all" && incident.severity !== severity) return false;
       return true;
     });
   }, [incidents, state, district, status, severity]);
 
+  const mappable = visible?.filter(
+    (i) => i.latitude !== undefined && i.longitude !== undefined,
+  );
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow">Incident feed</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            Incidents
-          </h1>
+          <p className="eyebrow">Citizen & field reports</p>
+          <h1 className="mt-1 text-xl font-semibold tracking-tight">Incidents</h1>
         </div>
         {incidents && (
           <p className="text-xs tabular-nums text-muted-foreground">
-            {visible?.length ?? 0} of {incidents.length} incidents
+            {visible?.length ?? 0} of {incidents.length} reports
           </p>
         )}
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <Select value={state} onValueChange={setState}>
           <SelectTrigger className="h-10 text-xs">
             <SelectValue placeholder="State" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all" className="text-xs">
-              All states
-            </SelectItem>
+            <SelectItem value="all" className="text-xs">All states</SelectItem>
             {NER_STATES.map((s) => (
-              <SelectItem key={s} value={s} className="text-xs">
-                {s}
-              </SelectItem>
+              <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -115,13 +94,9 @@ export function Incidents({ onOpen }: IncidentsProps) {
             <SelectValue placeholder="District" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all" className="text-xs">
-              All districts
-            </SelectItem>
+            <SelectItem value="all" className="text-xs">All districts</SelectItem>
             {districts.map((d) => (
-              <SelectItem key={d} value={d} className="text-xs">
-                {d}
-              </SelectItem>
+              <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -130,9 +105,7 @@ export function Incidents({ onOpen }: IncidentsProps) {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all" className="text-xs">
-              All statuses
-            </SelectItem>
+            <SelectItem value="all" className="text-xs">All statuses</SelectItem>
             {INCIDENT_STATUSES.map((s) => (
               <SelectItem key={s.value} value={s.value} className="text-xs">
                 {s.label}
@@ -145,9 +118,7 @@ export function Incidents({ onOpen }: IncidentsProps) {
             <SelectValue placeholder="Severity" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all" className="text-xs">
-              All severities
-            </SelectItem>
+            <SelectItem value="all" className="text-xs">All severities</SelectItem>
             {["low", "moderate", "high", "critical"].map((s) => (
               <SelectItem key={s} value={s} className="text-xs">
                 {severityLabel(s)}
@@ -158,23 +129,33 @@ export function Incidents({ onOpen }: IncidentsProps) {
       </div>
 
       {/* List / map toggle */}
-      <Tabs value={view} onValueChange={(v) => setView(v as "list" | "map")}>
-        <TabsList>
-          <TabsTrigger value="list">List</TabsTrigger>
-          <TabsTrigger value="map">Map</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex items-center justify-between">
+        <Tabs value={view} onValueChange={(v) => setView(v as "list" | "map")}>
+          <TabsList>
+            <TabsTrigger value="list">List</TabsTrigger>
+            <TabsTrigger value="map">Map</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        {view === "map" && mappable !== undefined && (
+          <p className="text-[11px] text-muted-foreground">
+            {mappable.length} with coordinates
+            {visible && visible.length > mappable.length
+              ? ` · ${visible.length - mappable.length} without coordinates not shown`
+              : ""}
+          </p>
+        )}
+      </div>
 
       {view === "list" && (
-        <div className="flex flex-col divide-y divide-border border border-border">
+        <div className="flex flex-col divide-y divide-border overflow-hidden rounded-md border border-border bg-card">
           {visible === undefined && (
-            <div className="px-6 py-14 text-center text-sm text-muted-foreground">
+            <div className="px-5 py-12 text-center text-sm text-muted-foreground">
               Loading incidents…
             </div>
           )}
           {visible !== undefined && visible.length === 0 && (
-            <div className="px-6 py-14 text-center text-sm text-muted-foreground">
-              No incidents match the current filters.
+            <div className="px-5 py-12 text-center text-sm text-muted-foreground">
+              No incidents reported for the selected area.
             </div>
           )}
           {visible?.map((incident) => (
@@ -182,24 +163,22 @@ export function Incidents({ onOpen }: IncidentsProps) {
               key={incident.id}
               type="button"
               onClick={() => onOpen(incident)}
-              className="group flex items-center gap-4 bg-background px-5 py-4 text-left transition-colors hover:bg-accent"
+              className="group flex items-center gap-4 px-5 py-3.5 text-left transition-colors hover:bg-accent"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-sm font-semibold">{incident.type}</h3>
-                  <Badge className="rounded-sm bg-foreground text-[10px] font-medium text-background">
+                  <Badge className="rounded-sm bg-primary text-[10px] font-medium text-primary-foreground">
                     {incidentStatusLabel(incident.status)}
                   </Badge>
                   <Badge variant="outline" className="rounded-sm text-[10px] font-medium">
                     {severityLabel(incident.severity)}
                   </Badge>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {incident.state ? `${incident.state} · ` : ""}
                   {incident.district ?? incident.location} ·{" "}
-                  {formatDistanceToNow(new Date(incident.createdAt), {
-                    addSuffix: true,
-                  })}
+                  {formatDistanceToNow(new Date(incident.createdAt), { addSuffix: true })}
                 </p>
               </div>
               <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
@@ -209,69 +188,70 @@ export function Incidents({ onOpen }: IncidentsProps) {
       )}
 
       {view === "map" && (
-        <div className="relative z-0 h-[420px] overflow-hidden rounded-lg border border-border bg-background sm:h-[500px]">
+        <div className="relative z-0 h-[420px] overflow-hidden rounded-md border border-border sm:h-[520px]">
           <MapContainer
             bounds={NER_BOUNDS}
             className="h-full w-full"
-            attributionControl={true}
+            attributionControl
           >
+            <MapChrome basemap={basemap} />
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              key={basemap}
+              url={
+                basemap === "satellite"
+                  ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                  : basemap === "terrain"
+                    ? "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+                    : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              }
+              attribution={
+                basemap === "satellite"
+                  ? "Imagery &copy; Esri, Maxar, Earthstar Geographics"
+                  : basemap === "terrain"
+                    ? "&copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap (CC-BY-SA)"
+                    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              }
+              maxZoom={basemap === "satellite" ? 18 : basemap === "terrain" ? 17 : 19}
             />
-            {visible?.map((incident) => {
-              const lat = incident.latitude;
-              const lng = incident.longitude;
-              if (lat === undefined || lng === undefined) return null;
-              const color =
-                SEVERITY_COLORS[incident.severity ?? ""] ?? "#8a8f98";
-              return (
-                <Marker
-                  key={incident.id}
-                  position={[lat, lng]}
-                  icon={makeIcon(color)}
-                >
-                  <Popup>
-                    <div className="dnt-popup">
-                      <p className="dnt-popup__name">{incident.type}</p>
-                      <p className="dnt-popup__code">Incident · {incident.id.slice(-6)}</p>
-                      <div className="dnt-popup__grid">
-                        <span className="dnt-popup__k">State</span>
-                        <span className="dnt-popup__v">{incident.state ?? "—"}</span>
-                        <span className="dnt-popup__k">District</span>
-                        <span className="dnt-popup__v">{incident.district ?? incident.location}</span>
-                        <span className="dnt-popup__k">Status</span>
-                        <span className="dnt-popup__v">{incidentStatusLabel(incident.status)}</span>
-                        <span className="dnt-popup__k">Severity</span>
-                        <span className="dnt-popup__v">{severityLabel(incident.severity)}</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="dnt-popup__btn"
-                        onClick={() => onOpen(incident)}
-                      >
-                        Open assessment
-                        <span aria-hidden="true">→</span>
-                      </button>
+            {mappable?.map((incident) => (
+              <Marker
+                key={incident.id}
+                position={[incident.latitude!, incident.longitude!]}
+                icon={incidentIcon(incident.severity)}
+              >
+                <Popup>
+                  <div className="dnt-popup">
+                    <p className="dnt-popup__name">{incident.type}</p>
+                    <p className="dnt-popup__code">
+                      {incident.district ?? incident.location}
+                    </p>
+                    <div className="dnt-popup__grid">
+                      <span className="dnt-popup__k">Status</span>
+                      <span className="dnt-popup__v">
+                        {incidentStatusLabel(incident.status)}
+                      </span>
+                      <span className="dnt-popup__k">Severity</span>
+                      <span className="dnt-popup__v">
+                        {severityLabel(incident.severity)}
+                      </span>
                     </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
+                    <button
+                      type="button"
+                      className="dnt-popup__btn"
+                      onClick={() => onOpen(incident)}
+                    >
+                      Open assessment
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
           </MapContainer>
-          {visible !== undefined && visible.length > 0 && (
-            <div className="pointer-events-none absolute bottom-4 left-4 rounded-md border border-border bg-background/95 px-3 py-2 text-xs text-muted-foreground backdrop-blur-sm">
-              Only incidents with coordinates can be placed on the map.
-            </div>
-          )}
+          <div className="absolute right-3 top-3 z-[500]">
+            <BasemapSwitcher value={basemap} onChange={setBasemap} />
+          </div>
         </div>
       )}
-
-      <p className="text-xs leading-5 text-muted-foreground">
-        Incident locations are placed only from reported coordinates. Incidents
-        without coordinates remain in the list view with an honest “no
-        coordinates” state.
-      </p>
     </div>
   );
 }

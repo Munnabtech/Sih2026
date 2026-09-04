@@ -4,6 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   Bell,
   ChevronRight,
+  Database,
   LogOut,
   ShieldCheck,
   Volume2,
@@ -71,8 +72,8 @@ export function Settings({ userName, userEmail, userImage, onNavigate }: Setting
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <p className="eyebrow">Account</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Settings</h1>
+        <p className="eyebrow">Account &amp; preferences</p>
+        <h1 className="mt-1 text-xl font-semibold tracking-tight">Settings</h1>
       </div>
 
       {/* Profile */}
@@ -97,10 +98,10 @@ export function Settings({ userName, userEmail, userImage, onNavigate }: Setting
       {/* Preferences */}
       <section>
         <p className="eyebrow mb-3">Preferences</p>
-        <div className="flex flex-col divide-y divide-border border border-border">
+        <div className="flex flex-col divide-y divide-border rounded-md border border-border bg-card">
           {rows.map((row) => (
             <div key={row.key} className="flex items-center gap-4 px-5 py-4">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-sm border border-border text-muted-foreground">
                 <row.icon className="size-4" strokeWidth={1.75} />
               </div>
               <div className="min-w-0 flex-1">
@@ -122,20 +123,36 @@ export function Settings({ userName, userEmail, userImage, onNavigate }: Setting
 
       {/* Workspace */}
       <section>
-        <p className="eyebrow mb-3">Workspace</p>
-        <div className="flex flex-col divide-y divide-border border border-border">
+        <p className="eyebrow mb-3">Platform</p>
+        <div className="flex flex-col divide-y divide-border rounded-md border border-border bg-card">
           <button
             type="button"
             onClick={() => onNavigate("admin")}
-            className="flex items-center gap-4 bg-background px-5 py-4 text-left transition-colors hover:bg-accent"
+            className="flex items-center gap-4 bg-card px-5 py-4 text-left transition-colors hover:bg-accent"
           >
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-sm border border-border text-muted-foreground">
               <ShieldCheck className="size-4" strokeWidth={1.75} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">Monitoring desk</p>
+              <p className="text-sm font-medium">About &amp; administration</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Manage zones and verify field reports
+                Platform information, zone management, and verification
+              </p>
+            </div>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate("coverage")}
+            className="flex items-center gap-4 bg-card px-5 py-4 text-left transition-colors hover:bg-accent"
+          >
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-sm border border-border text-muted-foreground">
+              <Database className="size-4" strokeWidth={1.75} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">Data &amp; model coverage</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Where predictions are available, and what is planned
               </p>
             </div>
             <ChevronRight className="size-4 text-muted-foreground" />
@@ -144,17 +161,17 @@ export function Settings({ userName, userEmail, userImage, onNavigate }: Setting
       </section>
 
       {/* Account actions */}
-      <section className="flex flex-col divide-y divide-border border border-border">
+      <section className="flex flex-col divide-y divide-border rounded-md border border-border bg-card">
         <button
           type="button"
           onClick={handleSignOut}
-          className="flex items-center gap-4 bg-background px-5 py-4 text-left transition-colors hover:bg-accent"
+          className="flex items-center gap-4 bg-card px-5 py-4 text-left transition-colors hover:bg-accent"
         >
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border text-red-600">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-sm border border-border text-destructive">
             <LogOut className="size-4" strokeWidth={1.75} />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-red-600">Sign out</p>
+            <p className="text-sm font-medium text-destructive">Sign out</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               End this session
             </p>
